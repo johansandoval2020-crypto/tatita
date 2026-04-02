@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Netflix</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #111;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: black;
+  color: red;
+}
+
+.menu-btn {
+  font-size: 25px;
+  cursor: pointer;
+  margin-right: 15px;
+}
+
+/* MENU */
+.sidebar {
+  position: fixed;
+  left: -200px;
+  top: 0;
+  width: 200px;
+  height: 100%;
+  background: #222;
+  transition: 0.3s;
+  padding-top: 60px;
+  z-index: 100;
+}
+
+.sidebar a {
+  display: block;
+  padding: 15px;
+  color: white;
+  text-decoration: none;
+}
+
+.sidebar a:hover {
+  background: red;
+}
+
+/* SECCIONES */
+.section {
+  display: none;
+  color: white;
+}
+
+.active {
+  display: block;
+}
+
+/* FILAS */
+.row {
+  margin: 20px;
+}
+
+.row-images {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.row-images img,
+.row-images video {
+  width: 120px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* BOTÓN + */
+.add-btn {
+  min-width: 120px;
+  height: 180px;
+  border: 2px dashed #555;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 40px;
+  color: #888;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="menu-btn" onclick="toggleMenu()">☰</div>
+  <h1>Netflix</h1>
+</header>
+
+<div class="sidebar" id="menu">
+  <a onclick="showSection('inicio')">Inicio</a>
+  <a onclick="showSection('anime')">Animes</a>
+</div>
+
+<!-- INICIO -->
+<div id="inicio" class="section active">
+
+  <div class="row">
+    <h2>Tendencias</h2>
+    <div class="row-images" id="fila1">
+      <img src="cine.jpeg">
+      <img src="tata.jpeg">
+      <img src="lambo.jpeg">
+      <img src="tati.jpeg">
+      <img src="tato.jpeg">
+      <img src="tatoro.jpeg">
+      <img src="uru.jpeg">
+      <img src="caco.jpeg">
+      <img src="asta.jpeg">
+      <img src="tata.jpeg">
+      <img src="p.jpeg">
+      <img src="e.jpeg">
+      <img src="n.jpeg">
+      <img src="i.jpeg">
+      <img src="t.jpeg">
+      <img src="a.jpeg">
+      <img src="u.jpeg">
+      <img src="w.jpeg">
+      <img src="uu.jpeg">
+      <img src="onichan.jpeg">
+      <div class="add-btn" onclick="addFile('fila1')">+</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <h2>Recomendados</h2>
+    <div class="row-images" id="fila2">
+      <img src="oi.jpeg">
+      <img src="s.jpeg">
+      <img src="sali.jpeg">
+      <img src="sexo.jpeg">
+      <img src="da.jpeg">
+      <img src="di.jpeg">
+      <img src="du.jpeg">
+      <img src="iu.jpeg">
+      <img src="ki.jpeg">
+      <img src="li.jpeg">
+      <div class="add-btn" onclick="addFile('fila2')">+</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ANIME -->
+<div id="anime" class="section">
+  <div style="padding:20px;">
+    <h2>🎌 Animes</h2>
+    <p>Sube imágenes y videos 👇</p>
+  </div>
+
+  <div class="row">
+    <div class="row-images" id="animeRow">
+      <div class="add-btn" onclick="addFile('animeRow')">+</div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*,video/*" hidden>
+
+<script>
+/* 🔌 SUPABASE CORRECTO */
+const supabaseClient = supabase.createClient(
+  "https://acrkfmzwunnjnpnybuwr.supabase.co",
+  "uddktccf202"
+);
+
+let currentRow = "";
+
+/* MENU */
+function toggleMenu() {
+  const menu = document.getElementById("menu");
+  menu.style.left = (menu.style.left === "0px") ? "-200px" : "0px";
+}
+
+/* CERRAR MENU */
+document.addEventListener("click", function(e) {
+  const menu = document.getElementById("menu");
+  const btn = document.querySelector(".menu-btn");
+
+  if (!menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.style.left = "-200px";
+  }
+});
+
+/* CAMBIAR SECCIÓN */
+function showSection(id) {
+  document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+/* BOTÓN + */
+function addFile(rowId) {
+  currentRow = rowId;
+  document.getElementById("fileInput").click();
+}
+
+/* SUBIR ARCHIVO */
+document.getElementById("fileInput").addEventListener("change", async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const fileName = Date.now() + "-" + file.name;
+
+  const { error } = await supabaseClient.storage
+    .from("media")
+    .upload(fileName, file);
+
+  if (error) {
+    alert("Error al subir");
+    return;
+  }
+
+  const { data } = supabaseClient.storage
+    .from("media")
+    .getPublicUrl(fileName);
+
+  const url = data.publicUrl;
+  const tipo = file.type.startsWith("video") ? "video" : "image";
+
+  await supabaseClient.from("media").insert([
+    { url: url, tipo: tipo, fila: currentRow }
+  ]);
+
+  agregarElemento(url, tipo, currentRow);
+});
+
+/* CREAR ELEMENTO */
+function agregarElemento(url, tipo, fila) {
+  let element;
+
+  if (tipo === "video") {
+    element = document.createElement("video");
+    element.src = url;
+    element.controls = true;
+  } else {
+    element = document.createElement("img");
+    element.src = url;
+  }
+
+  const row = document.getElementById(fila);
+  row.insertBefore(element, row.querySelector(".add-btn"));
+}
+
+/* CARGAR TODO */
+window.onload = async () => {
+  const { data } = await supabaseClient.from("media").select("*");
+
+  data.forEach(item => {
+    agregarElemento(item.url, item.tipo, item.fila);
+  });
+};
+</script>
+
+</body>
+</html>
